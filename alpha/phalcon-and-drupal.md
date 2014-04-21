@@ -1,11 +1,12 @@
 Phalcon & Drupal
 ================
 Within this reading, I will cover a setup of combining your Drupal back-end with a Phalcon front-end.
+The subjects will cover the whole process so you will be ready to start your own project with this setup!
 
 Subjects
 --------
-* Why? A little background information
-* Requirements for setting up this work environment
+* Why? A little background information [Link](#why-a-little-background-information)
+* Requirements for setting up this work environment [Link](#requirements-for-setting-up-this-work-environment)
 * Project structure
 * Drupal
     * Using JSON as cachable data layer with a simple module to hook your data
@@ -37,3 +38,4 @@ Phalcon as our advanced MVC framework filled with content served in our client f
 
 Requirements for setting up this work environment
 -------------------------------------------------
+Anyway, we are ready and set to set up our environment so we can create some awesome code
