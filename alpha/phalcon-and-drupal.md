@@ -11,7 +11,7 @@ Subjects
 * [Drupal](#drupal)
     * Using JSON as cachable data layer with a simple module to hook your data
     * Using the REST service with oAuth 2.0 for more security
-* Phalcon
+* [Phalcon](#phalcon)
     * Create a scalable INI configuration layer
     * Using a JSON Model to fetch data from Drupals generated JSON files
     * Using the oAuth 2.0 library with a REST Model for secure data transferring
@@ -83,3 +83,103 @@ can actually connect our 2 platforms!
 
 Drupal
 ------
+The first thing we need in Drupal is a custom module te provide JSON data. I've set the private folder on
+admin/config/media/file-system to sites/default/files/private which is needed to use the private uri.
+
+I've called the module 'JSON Content' with the following contents in the .module file:
+
+```php
+define("JSON_CONTENT_FILE_URI", "private://json_content.json");
+
+/**
+ * Cronjob for saving file
+ */
+function json_content_cron()
+{
+    _json_content_save_files();
+}
+
+/**
+ * Save file on insert
+ */
+function json_content_node_insert()
+{
+    _json_content_save_files();
+}
+
+/**
+ * Save file on update
+ */
+function json_content_node_update()
+{
+    _json_content_save_files();
+}
+
+/**
+ * Get content from other modules & save data in JSON file like a boaws
+ *
+ * @see json_content_cron
+ * @see json_content_node_insert
+ * @see json_content_node_update
+ * @see json_content_node_delete
+ */
+function _json_content_save_files()
+{
+    $content = module_invoke_all("json_content_add");
+    file_unmanaged_save_data(json_encode($content), JSON_CONTENT_FILE_URI, FILE_EXISTS_REPLACE);
+}
+```
+As you can the, the module provides a hook to add new data for the JSON output. On every insert, update or
+cronjob, the file will be overridden with the latest changes.
+
+The use the new hook, we can create a custom module. Let's say it's called 'subscribers' (create a Content Type
+named 'Subscriber' without any custom fields), with the following lines of code:
+
+```php
+/**
+ * @see _json_content_save_files
+ */
+function subscribers_json_content_add()
+{
+    return array(
+        'subscribers' => _subscribers_get_all()
+    );
+}
+
+/**
+ * @return mixed
+ */
+function _subscribers_get_all()
+{
+    $query = db_select("node", "n");
+    $query->addField("n", "nid");
+    $query->addField("n", "title", "name");
+    $query->addField("n", "created");
+    $query->condition("n.type", "subscriber", "=");
+    return $query->execute()->fetchAllAssoc('nid');
+}
+```
+We've now created a unique key for the subscribers within the JSON file and we are free to create a structure
+for each key we add in different modules. In this case it's a simple query that returns 3 fields for each record.
+
+To provide some extra security for our private folder and still make it open for reading. We have a .htaccess
+with the following contents:
+
+```
+AuthName "Login Credentials"
+AuthUserFile /Users/--complete-path-till-cms-folder--/cms/sites/default/files/private/.htpasswd
+AuthGroupFile /dev/null
+AuthType Basic
+
+require valid-user
+```
+And the .htpasswd:
+```
+phalcon_drupal:AAzMaoyXwcGAQ
+```
+
+We are now set with a generated JSON file that is secured by a simple authentication layer that we can use within
+our Phalcon logic.
+
+Phalcon
+-------
