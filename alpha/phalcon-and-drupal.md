@@ -5,10 +5,10 @@ The subjects will cover the whole process so you will be ready to start your own
 
 Subjects
 --------
-* Why? A little background information [Link](#why-a-little-background-information)
-* Requirements for setting up this work environment [Link](#requirements-for-setting-up-this-work-environment)
-* Project structure
-* Drupal
+* [Why? A little background information](#why-a-little-background-information)
+* [Requirements for setting up this work environment](#requirements-for-setting-up-this-work-environment)
+* [Project structure](#project-structure)
+* [Drupal](#drupal)
     * Using JSON as cachable data layer with a simple module to hook your data
     * Using the REST service with oAuth 2.0 for more security
 * Phalcon
@@ -38,4 +38,48 @@ Phalcon as our advanced MVC framework filled with content served in our client f
 
 Requirements for setting up this work environment
 -------------------------------------------------
-Anyway, we are ready and set to set up our environment so we can create some awesome code
+Anyway, we are ready and set to set up our environment so we can create some awesome code.
+
+For our Drupal setup we need a Drupal 7 release (used 7.26 for this example, so I would advice this
+version or higher) with the following contrib modules:
+
+* Ctools (Always needed for most other contrib modules)
+* Services / REST Server (Needed for Services layer with REST endpoint)
+* oAuth Authentication / oAuth / oAuth provider UI (used for a safe REST Service)
+* Libraries (Required by REST Server)
+
+For a normal setup it will probably happen that you will use views to have more data control, but it's
+not necessary for out basic setup.
+
+For Phalcon I've used Phalcon 1.2.6. I don't know if the newer 1.3.x release will break anything but you
+can always play with the Apache module to change the version while developing.
+
+As Libraries you need a Httpful folder with the very handy httful rest library (http://phphttpclient.com/) &
+the oAuth client (TODO: add custom link for PHP 5.3 Phalconized oAuth lib.)
+
+Project structure
+-----------------
+Anyway, we are ready and set to set up our environment so we can create some awesome code. The project
+setup I used was divided in the following folder structure:
+
+* web (filled with Phalcon code)
+    * public (JS/CSS/Images & main index.php file)
+    * app (models/views/controllers/config/libraries/classes)
+* cms (Filled with the contents of your favorite Drupal distribution/installation)
+* .htaccess with following contents:
+
+```
+<IfModule mod_rewrite.c>
+    RewriteEngine on
+
+    #Always web, with the exception of Drupal
+    RewriteCond %{REQUEST_URI} !/cms
+    RewriteRule  (.*) web/public/$1 [L]
+</IfModule>
+```
+
+After setting up this environment we should be set to start adding some custom code to our project so we
+can actually connect our 2 platforms!
+
+Drupal
+------
