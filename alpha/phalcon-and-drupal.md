@@ -122,7 +122,6 @@ function json_content_node_update()
  * @see json_content_cron
  * @see json_content_node_insert
  * @see json_content_node_update
- * @see json_content_node_delete
  */
 function _json_content_save_files()
 {
@@ -148,7 +147,7 @@ function subscribers_json_content_add()
 }
 
 /**
- * @return mixed
+ * @return array
  */
 function _subscribers_get_all()
 {
@@ -276,7 +275,8 @@ This is where we use our HttpFul library to create a GET Request to load our dat
 will be available to retrieve the specific data that is stored within a certain key from within Drupal.
 
 We've got a BaseController (placed in app/controllers) that stores a reference to our JSON Model so every
-controller that extends our BaseController will be able to use JSON data:
+controller that extends our BaseController (which extends the \Phalcon\Mvc\Controller) will be able to use
+JSON data:
 ```php
 protected $jsonModel;
 
