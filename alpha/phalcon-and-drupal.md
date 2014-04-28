@@ -13,8 +13,7 @@ Subjects
 * [Phalcon](#phalcon)
     * Create a scalable INI configuration layer
     * Using a JSON Model to fetch data from Drupals generated JSON files
-* [Optional scaling of your application](#optional-scaling-of-your-application)
-    * Multilingual support
+* [Multilingual support](#multilingual-support)
 
 Why? A little background information
 ------------------------------------
@@ -199,7 +198,7 @@ classesDir          = '../app/classes/'
 
 ;JSON settings for loading Drupals data
 [json]
-contentUrl          = 'http://playground.dev/phalcon_drupal/cms/sites/default/files/private/json_content.json'
+contentUrl          = 'http://phalcon_drupal.dev/cms/sites/default/files/private/json_content.json'
 username            = 'phalcon_drupal'
 password            = 'phalcon_drupal'
 ```
@@ -319,5 +318,130 @@ some clean custom HTML output:
 Great stuff right? A Model abstraction layer, almost no code in our specific page controller action & HTML
 freedom that makes any front-end developer smile!
 
-Optional scaling of your application
-------------------------------------
+Multilingual support
+--------------------
+With my latest project we needed multilingual support for our setup. To enable this setup we need some code
+refactoring, starting with our drupal 'JSON Content' .module file:
+```diff
+-define("JSON_CONTENT_FILE_URI", "private://json_content.json");
++define("JSON_CONTENT_FILE_URI", "private://json/__LANG___json_content.json");
+
+function _json_content_save_files()
+{
+-    $content = module_invoke_all("json_content_add");
+-    file_unmanaged_save_data(json_encode($content), JSON_CONTENT_FILE_URI, FILE_EXISTS_REPLACE);
++    $content = module_invoke_all("json_content_add");
++    $languages = language_list();
+
++    foreach ($languages as $language => $languageProperties) {
++        $destination = str_replace("__LANG__", $language, JSON_CONTENT_FILE_URI);
++        file_unmanaged_save_data(json_encode($content[$language]), $destination, FILE_EXISTS_REPLACE);
++    }
+}
+```
+
+As you can see, we are creating 1 JSON file for every language. This also means we need to change the way we
+implement our hook. This might result into something like this:
+```diff
+/**
+ * @see _json_content_save_files
+ */
+function subscribers_json_content_add()
+{
++    return array(
+-        'subscribers' => _subscribers_get_all()
++        'nl' => array(
++            'subscribers' => _subscribers_get_all('nl')
++        ),
++        'en' => array(
++            'subscribers' => _subscribers_get_all('en')
++        )
++    );
+}
+
+/**
++ * @param $language
+ * @return array
+ */
+-function _subscribers_get_all()
++function _subscribers_get_all($language)
+{
+    $query = db_select("node", "n");
+    $query->addField("n", "nid");
+    $query->addField("n", "title", "name");
+    $query->addField("n", "created");
++    $query->condition("n.language", $language, "=");
+    $query->condition("n.type", "subscriber", "=");
+    return $query->execute()->fetchAllAssoc('nid');
+}
+```
+
+When developing in Drupal, there might be a big chance that you'll need the i18n module for much more advanced
+multilingual implementations.
+
+For Phalcon we need some changes, starting with the .ini config file. We need to configure a folder instead of
+1 file, because we now have more JSON files.
+```diff
+-contentUrl          = 'http://phalcon_drupal.dev/cms/sites/default/files/private/json_content.json'
++contentUrl          = 'http://phalcon_drupal.dev/cms/sites/default/files/private/json/'
+```
+
+Within our BaseController, we need to pass our current language. Depending on your architecture, you've probably
+got some routing implemented to define your current language. The basic change will be this:
+```diff
+public function initialize()
+{
+-    $this->jsonModel = new JSONModel($this->config->json);
++    //Some logic to define your $language variable
++    $this->jsonModel = new JSONModel($this->config->json, $language);
+}
+```
+
+Last but not least, we tweak our JSONModel so it will only load the JSON file needed within the current language
+context and store it the same way we were already used to:
+```diff
++/**
++ * @var string
++ */
++private $language;
+
+/**
+ * @var array
+ */
+private $data;
+
+/**
+ * @param $config
++ * @param $language
+ */
+-public function __construct($config)
++public function __construct($config, $language = 'en')
+{
+    $this->config = $config;
++    $this->language = $language;
+    $this->loadJSON();
+}
+
+/**
+ * Request to load JSON file
+ */
+private function loadJSON()
+{
+    \Httpful\Bootstrap::init();
+
+-    $response = \Httpful\Request::get($this->config->contentUrl)
++    $response = \Httpful\Request::get($this->config->contentUrl . $this->language . '_json_content.json')
+        ->authenticateWithBasic($this->config->username, $this->config->password)
+        ->addHeader("Content-Type", "application/json")
+        ->parseWith(function ($body) {
+            return json_decode($body, true);
+        })
+        ->expectsJson()
+        ->send();
+
+    $this->data = $response->body;
+}
+```
+
+And that's it! We've only created an extra layer to support multilingual applications within the Drupal/Phalcon
+context and it's up to you to extend this functionality and make it legen...wait for it...dary!
