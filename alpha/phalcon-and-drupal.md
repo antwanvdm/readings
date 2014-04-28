@@ -198,7 +198,7 @@ classesDir          = '../app/classes/'
 
 ;JSON settings for loading Drupals data
 [json]
-contentUrl          = 'http://phalcon_drupal.dev/cms/sites/default/files/private/json_content.json'
+contentUrl          = 'http://phalcon-drupal.dev/cms/sites/default/files/private/json_content.json'
 username            = 'phalcon_drupal'
 password            = 'phalcon_drupal'
 ```
@@ -320,17 +320,16 @@ freedom that makes any front-end developer smile!
 
 Multilingual support
 --------------------
-With my latest project we needed multilingual support for our setup. To enable this setup we need some code
-refactoring, starting with our drupal 'JSON Content' .module file:
+With my latest project we needed multilingual support. To enable this feature within our setup, we need some
+code refactoring, starting with our drupal 'JSON Content' .module file:
 ```diff
 -define("JSON_CONTENT_FILE_URI", "private://json_content.json");
 +define("JSON_CONTENT_FILE_URI", "private://json/__LANG___json_content.json");
 
 function _json_content_save_files()
 {
--    $content = module_invoke_all("json_content_add");
+    $content = module_invoke_all("json_content_add");
 -    file_unmanaged_save_data(json_encode($content), JSON_CONTENT_FILE_URI, FILE_EXISTS_REPLACE);
-+    $content = module_invoke_all("json_content_add");
 +    $languages = language_list();
 
 +    foreach ($languages as $language => $languageProperties) {
@@ -379,11 +378,11 @@ function subscribers_json_content_add()
 When developing in Drupal, there might be a big chance that you'll need the i18n module for much more advanced
 multilingual implementations.
 
-For Phalcon we need some changes, starting with the .ini config file. We need to configure a folder instead of
-1 file, because we now have more JSON files.
+For Phalcon we also need some changes, starting with the .ini config file. We need to configure a folder instead
+of 1 file, because we now have more JSON files.
 ```diff
--contentUrl          = 'http://phalcon_drupal.dev/cms/sites/default/files/private/json_content.json'
-+contentUrl          = 'http://phalcon_drupal.dev/cms/sites/default/files/private/json/'
+-contentUrl          = 'http://phalcon-drupal.dev/cms/sites/default/files/private/json_content.json'
++contentUrl          = 'http://phalcon-drupal.dev/cms/sites/default/files/private/json/'
 ```
 
 Within our BaseController, we need to pass our current language. Depending on your architecture, you've probably
@@ -443,5 +442,5 @@ private function loadJSON()
 }
 ```
 
-And that's it! We've only created an extra layer to support multilingual applications within the Drupal/Phalcon
-context and it's up to you to extend this functionality and make it legen...wait for it...dary!
+And that's it! We've now created an extra layer to support multilingual applications within the Drupal/Phalcon
+context, and it's up to you to extend this functionality and make it legen...wait for it...dary!
